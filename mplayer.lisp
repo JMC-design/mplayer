@@ -2,11 +2,7 @@
   (:use :cl :sb-ext)
   (:export #:play
 	   #:*mplayer-defaults*
-	   #:send-command
-	   #:video-play-problem
-	   #:process-status-change
-	   #:signal-status-changes
-	   #:print-status))
+	   #:send-command))
 
 (in-package :mplayer)
 
@@ -14,8 +10,6 @@
 
 (defparameter *mplayer-defaults* '("-panscan" "1"  "-volume" "5" "-loop" "0" "-quiet" "-slave" "-vo" "gl3")
   "a list of strings to be fed to the mplayer executable, formatted as per man page")
-(defparameter *fail* 0)
-
 
 
 (defun signal-status-changes (process)
@@ -30,13 +24,8 @@
 			  `(,file ,@arglist)
 			  :wait nil :input :stream :output :stream :status-hook status-hook)))
 
-(defun problem-sending-command (condition)
-  "reports problem with sending command instead of entering debugger. Just returns condition"
-  condition)
-
 (defun send-command (mplayer-process command)
   "Send the text string command, as per slave.txt, to mplayers input stream. Automatically adds a newline."
-  (handler-bind ((simple-stream-error #'problem-sending-command))
-    (with-open-stream (input-stream (sb-ext:process-input mplayer-process))
-								    (format input-stream "~a~%" command )
-								    (finish-output input-stream))))
+  (with-open-stream (input-stream (sb-ext:process-input mplayer-process))
+    (format input-stream "~a~%" command )
+    (finish-output input-stream)))
