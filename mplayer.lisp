@@ -17,19 +17,10 @@
 (defparameter *fail* 0)
 
 
-;;; conditions and errors
 
-(define-condition video-play-problem (condition)
-  ((file :initarg :file :reader file)
-   (status :initarg :status :reader status)))
-
-(define-condition process-status-change (condition)
-  ((status :initarg :status :reader status)
-   (code :initarg :code :reader code)
-   (pid :initarg :pid :reader pid)))
-
-
-
+(defun signal-status-changes (process)
+  "simply prints out status of the process"
+  (format t "~s" (process-status process)))
 
 (defun play (file &key window (options *mplayer-defaults*) (status-hook #'signal-status-changes))
   "Plays file with mplayer. You can specify an X11 window to be parented to, or options in addition to a status hook besides the basic default one."
@@ -39,8 +30,13 @@
 			  `(,file ,@arglist)
 			  :wait nil :input :stream :output :stream :status-hook status-hook)))
 
+(defun problem-sending-command (condition)
+  "reports problem with sending command instead of entering debugger. Just returns condition"
+  condition)
+
 (defun send-command (mplayer-process command)
   "Send the text string command, as per slave.txt, to mplayers input stream. Automatically adds a newline."
-  (let ((input-stream (sb-ext:process-input mplayer-process)) )
-    (format input-stream "~a~%" command )
-    (finish-output input-stream)))
+  (handler-bind ((simple-stream-error #'problem-sending-command))
+    (with-open-stream (input-stream (sb-ext:process-input mplayer-process))
+								    (format input-stream "~a~%" command )
+								    (finish-output input-stream))))
